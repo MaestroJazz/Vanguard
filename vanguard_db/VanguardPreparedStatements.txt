@@ -333,7 +333,67 @@ PREPARE getCompetitionWithMatchData AS
  * 	during a single competition for a single robot at 
  * 	the compeition 
  */ 
+PREPARE getAveragePointsSingleRobot AS
+	SELECT X.Name, X.Comp, SUM(X.Points) AS Points
+	FROM (
+		SELECT Robot.name AS RobotName, Match.CompetitionTBAKey AS Comp, 
+			CASE WHEN ScoringLocation.level = 'Low' THEN '3'
+	     		WHEN ScoringLocation.level = 'Middle' THEN '4'
+	     		WHEN ScoringLocation.level = 'High' THEN '6'
+			END AS Points
+		FROM Robot
+			JOIN RobotInMatch ON( Robot.TBAKey = RobotInMatch.RobotTBAKey )
+			JOIN Match ON( RobotInMatch.MatchTBAKey = Match.TBAKey )
+			JOIN Scout ON( RobotInMatch.ID = Scout.RobotInMatchID )
+			JOIN ScoreGamePieceEvent ON( Scout.ID = ScoreGamePieceEvent.ScoutID )
+			JOIN ScoringLocation ON( ScoreGamePieceEvent.ScoringLocationID = ScoringLocation.ID )
+		WHERE ScoreGamePieceEvent.MatchPeriodID = 'A'
 
+		UNION
+
+		SELECT Robot.name AS RobotName, Match.CompetitionTBAKey AS Comp, 
+			CASE WHEN NonGamePieceScoringType.ID = 'MB' THEN '3'
+		 	    WHEN NonGamePieceScoringType.ID = 'DK' THEN '8'
+		  	   WHEN NonGamePieceScoringType.ID = 'EG' THEN '12'
+			END AS Points
+		FROM Robot
+			JOIN RobotInMatch ON( Robot.TBAKey = RobotInMatch.RobotTBAKey )
+			JOIN Match ON( RobotInMatch.MatchTBAKey = Match.TBAKey )
+			JOIN Scout ON( RobotInMatch.ID = Scout.RobotInMatchID )
+			JOIN ScoreWithoutGamePieceEvent ON( Scout.ID = ScoreWithoutGamePieceEvent.ScoutID )
+			JOIN NonGamePieceScoringType ON( ScoreWithoutGamePieceEvent.NonGamePieceScoringTypeID = NonGamePieceScoringType.ID )
+		WHERE ScoreWithoutGamePieceEvent.MatchPeriodID = 'A' 
+
+		UNION
+
+		SELECT Robot.name AS RobotName, Match.CompetitionTBAKey AS Comp, 
+			CASE WHEN ScoringLocation.level = 'Low' THEN '2'
+	     		WHEN ScoringLocation.level = 'Middle' THEN '3'
+	     		WHEN ScoringLocation.level = 'High' THEN '5'
+			END AS Points
+		FROM Robot
+			JOIN RobotInMatch ON( Robot.TBAKey = RobotInMatch.RobotTBAKey )
+			JOIN Match ON( RobotInMatch.MatchTBAKey = Match.TBAKey )
+			JOIN Scout ON( RobotInMatch.ID = Scout.RobotInMatchID )
+			JOIN ScoreGamePieceEvent ON( Scout.ID = ScoreGamePieceEvent.ScoutID )
+			JOIN ScoringLocation ON( ScoreGamePieceEvent.ScoringLocationID = ScoringLocation.ID )
+		WHERE ScoreGamePieceEvent.MatchPeriodID = 'T'
+	
+		UNION
+
+		SELECT Robot.name AS RobotName, Match.CompetitionTBAKey AS Comp, 
+			CASE WHEN NonGamePieceScoringType.ID = 'PK' THEN '2'
+		     	WHEN NonGamePieceScoringType.ID = 'DK' THEN '6'
+		     	WHEN NonGamePieceScoringType.ID = 'EG' THEN '10'
+			END AS Points
+		FROM Robot
+			JOIN RobotInMatch ON( Robot.TBAKey = RobotInMatch.RobotTBAKey )
+			JOIN Match ON( RobotInMatch.MatchTBAKey = Match.TBAKey )
+			JOIN Scout ON( RobotInMatch.ID = Scout.RobotInMatchID )
+			JOIN ScoreWithoutGamePieceEvent ON( Scout.ID = ScoreWithoutGamePieceEvent.ScoutID )
+			JOIN NonGamePieceScoringType ON( ScoreWithoutGamePieceEvent.NonGamePieceScoringTypeID = NonGamePieceScoringType.ID )
+		WHERE ScoreWithoutGamePieceEvent.MatchPeriodID = 'A' ) AS X
+	GROUP BY X.Name, X.CompName;
 
 /*
  *	Query for calculating the average points scored 
